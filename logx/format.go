@@ -30,9 +30,9 @@ func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	timestamp := entry.Time.Format(defaultTimeFormat)
-	colorfulLevel := fmt.Sprintf("\u001B[%dm%s\u001B[0m", getLevelColor(entry.Level), strings.ToUpper(entry.Level.String()))
+	colorfulLevel := fmt.Sprintf("\u001B[%dm%s\u001B[0m", getLevelColor(entry.Level), getLevelString(entry.Level))
 
-	log := fmt.Sprintf("%s %5s %s %s\n", timestamp, colorfulLevel, buildCaller(entry.Caller), entry.Message)
+	log := fmt.Sprintf("%s %5s [%s] - %s\n", timestamp, colorfulLevel, buildCaller(entry.Caller), entry.Message)
 	buffer.WriteString(log)
 	return buffer.Bytes(), nil
 }
@@ -47,9 +47,28 @@ func getLevelColor(level logrus.Level) int {
 		return red
 	case logrus.DebugLevel, logrus.TraceLevel:
 		return gray
-	default:
-		return green
 	}
+	return green
+}
+
+func getLevelString(level logrus.Level) string {
+	switch level {
+	case logrus.TraceLevel:
+		return "TRACE"
+	case logrus.DebugLevel:
+		return "DEBUG"
+	case logrus.InfoLevel:
+		return "INFO"
+	case logrus.WarnLevel:
+		return "WARN"
+	case logrus.ErrorLevel:
+		return "ERROR"
+	case logrus.FatalLevel:
+		return "FATAL"
+	case logrus.PanicLevel:
+		return "PANIC"
+	}
+	return "UNKNOWN"
 }
 
 func buildCaller(caller *runtime.Frame) string {

@@ -18,6 +18,7 @@ type logX struct {
 
 func New() *logX {
 	log := logrus.New()
+	log.SetReportCaller(true)
 	log.SetFormatter(&stdFormat{})
 
 	return &logX{
