@@ -12,15 +12,17 @@ const (
 	DebugLevel
 )
 
-type LogX interface {
-}
-
 type logX struct {
 	logrus *logrus.Logger
 }
 
 func New() *logX {
-	return &logX{}
+	log := logrus.New()
+	log.SetFormatter(&stdFormat{})
+
+	return &logX{
+		logrus: log,
+	}
 }
 
 // Print family functions
