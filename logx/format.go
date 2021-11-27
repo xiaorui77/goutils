@@ -32,7 +32,7 @@ func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	timestamp := entry.Time.Format(defaultTimeFormat)
 	colorfulLevel := fmt.Sprintf("\u001B[%dm%s\u001B[0m", getLevelColor(entry.Level), getLevelString(entry.Level))
 
-	log := fmt.Sprintf("%s %5s [%s] - %s\n", timestamp, colorfulLevel, buildCaller(entry.Caller), entry.Message)
+	log := fmt.Sprintf("%s %5s %s - %s\n", timestamp, colorfulLevel, buildCaller(entry.Caller), entry.Message)
 	buffer.WriteString(log)
 	return buffer.Bytes(), nil
 }
