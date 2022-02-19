@@ -4,17 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"runtime"
 	"strings"
 )
 
 const defaultTimeFormat = "2006-01-02 15:04:05"
 
 const (
+	black  = 30
 	red    = 31
 	green  = 32
 	yellow = 33
-	blue   = 36
+	blue   = 34
+	purple = 35
+	cyan   = 36
 	gray   = 37
 )
 
@@ -30,9 +32,10 @@ func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	timestamp := entry.Time.Format(defaultTimeFormat)
-	colorfulLevel := fmt.Sprintf("\u001B[%dm%s\u001B[0m", getLevelColor(entry.Level), getLevelString(entry.Level))
+	colorfulLevel := fmt.Sprintf("\033[%dm%s\033[0m", getLevelColor(entry.Level), getLevelString(entry.Level))
 
-	log := fmt.Sprintf("%s %5s %s - %s\n", timestamp, colorfulLevel, buildCaller(entry.Caller), entry.Message)
+	// 2022-02-20 03:27:20 INFO main.go:28 - log info output
+	log := fmt.Sprintf("%s %5s %s - %s\n", timestamp, colorfulLevel, buildCaller(entry), entry.Message)
 	buffer.WriteString(log)
 	return buffer.Bytes(), nil
 }
@@ -71,13 +74,22 @@ func getLevelString(level logrus.Level) string {
 	return "UNKNOWN"
 }
 
-func buildCaller(caller *runtime.Frame) string {
-	if caller == nil {
-		return ""
+func buildCaller(entry *logrus.Entry) string {
+	file := "xx"
+	line := -1
+	if fi, ok := entry.Data["file"]; ok {
+		if f, ok := fi.(string); ok {
+			file = f
+		}
 	}
-	fileName := caller.File
-	if index := strings.LastIndex(fileName, "/"); index >= 0 {
-		fileName = fileName[index+1:]
+	if li, ok := entry.Data["line"]; ok {
+		if l, ok := li.(int); ok {
+			line = l
+		}
 	}
-	return fmt.Sprintf("%s:%d", fileName, caller.Line)
+
+	if index := strings.LastIndex(file, "/"); index >= 0 {
+		file = file[index+1:]
+	}
+	return fmt.Sprintf("%s:%d", file, line)
 }
