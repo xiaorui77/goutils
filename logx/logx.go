@@ -2,6 +2,7 @@ package logx
 
 import (
 	"github.com/sirupsen/logrus"
+	"io"
 	"runtime"
 )
 
@@ -9,12 +10,6 @@ var std = New()
 
 // Level type
 type Level uint32
-
-const (
-	TraceLevel uint32 = iota
-	DebugLevel
-	InfoLevel
-)
 
 type logX struct {
 	logrus *logrus.Logger
@@ -27,6 +22,14 @@ func New() *logX {
 	return &logX{
 		logrus: log,
 	}
+}
+
+func SetLevel(level logrus.Level) {
+	std.logrus.SetLevel(level)
+}
+
+func SetOutput(output io.Writer) {
+	std.logrus.SetOutput(output)
 }
 
 // Print family functions
