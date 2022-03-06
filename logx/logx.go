@@ -70,7 +70,7 @@ func Printf(format string, args ...interface{}) { Logf(logrus.InfoLevel, format,
 
 func Infof(format string, args ...interface{}) { Logf(logrus.InfoLevel, format, args...) }
 
-func Warnf(format string, args ...interface{}) { Logf(logrus.DebugLevel, format, args...) }
+func Warnf(format string, args ...interface{}) { Logf(logrus.WarnLevel, format, args...) }
 
 func Errorf(format string, args ...interface{}) { Logf(logrus.ErrorLevel, format, args...) }
 
