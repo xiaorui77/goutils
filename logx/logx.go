@@ -1,17 +1,17 @@
 package logx
 
 import (
-	"github.com/sirupsen/logrus"
 	"io"
 	"runtime"
+
+	"github.com/sirupsen/logrus"
 )
 
 var std = New()
 
-// Level type
-type Level uint32
-
 type logX struct {
+	reportCaller bool
+
 	logrus *logrus.Logger
 }
 
@@ -24,6 +24,12 @@ func New() *logX {
 	}
 }
 
+func Init(opts ...Option) {
+	for _, o := range opts {
+		o(std)
+	}
+}
+
 func SetLevel(level logrus.Level) {
 	std.logrus.SetLevel(level)
 }
@@ -32,11 +38,42 @@ func SetOutput(output io.Writer) {
 	std.logrus.SetOutput(output)
 }
 
+// Option Pattern
+
+type Option func(l *logX)
+
+func OptLevel(level string) Option {
+	return func(l *logX) {
+		lv, err := logrus.ParseLevel(level)
+		if err != nil {
+			// default Info
+			lv = logrus.InfoLevel
+		}
+		l.logrus.SetLevel(logrus.Level(lv))
+	}
+}
+
+func OptReportCaller(reportCaller bool) Option {
+	return func(l *logX) {
+		l.reportCaller = reportCaller
+	}
+}
+
+func OptOutput() Option {
+	return func(l *logX) {
+		l.logrus.SetOutput(l.logrus.Out)
+	}
+}
+
 // Print family functions
 
 func Log(level logrus.Level, args ...interface{}) {
-	_, file, line, _ := runtime.Caller(2)
-	std.logrus.WithFields(logrus.Fields{"file": file, "line": line}).Log(level, args...)
+	var field logrus.Fields
+	if std.reportCaller {
+		_, file, line, _ := runtime.Caller(2)
+		field = logrus.Fields{"file": file, "line": line}
+	}
+	std.logrus.WithFields(field).Log(level, args...)
 }
 
 func Trace(args ...interface{}) { Log(logrus.TraceLevel, args...) }
@@ -58,8 +95,12 @@ func Fatal(args ...interface{}) { Log(logrus.FatalLevel, args...) }
 // Printf family functions
 
 func Logf(level logrus.Level, format string, args ...interface{}) {
-	_, file, line, _ := runtime.Caller(2)
-	std.logrus.WithFields(logrus.Fields{"file": file, "line": line}).Logf(level, format, args...)
+	var field logrus.Fields
+	if std.reportCaller {
+		_, file, line, _ := runtime.Caller(2)
+		field = logrus.Fields{"file": file, "line": line}
+	}
+	std.logrus.WithFields(field).Logf(level, format, args...)
 }
 
 func Tracef(format string, args ...interface{}) { Logf(logrus.TraceLevel, format, args...) }
