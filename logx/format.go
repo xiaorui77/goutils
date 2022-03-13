@@ -32,11 +32,22 @@ func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	timestamp := entry.Time.Format(defaultTimeFormat)
-	colorfulLevel := fmt.Sprintf("\033[%dm%s\033[0m", getLevelColor(entry.Level), getLevelString(entry.Level))
+	buffer.WriteString(timestamp)
+
+	colorfulLevel := fmt.Sprintf("\033[%dm%5s\033[0m", getLevelColor(entry.Level), getLevelString(entry.Level))
+	buffer.WriteString(" ")
+	buffer.WriteString(colorfulLevel)
+
+	caller := buildCaller(entry)
+	if caller != "" {
+		buffer.WriteString(" ")
+		buffer.WriteString(caller)
+	}
+
+	buffer.WriteString(" - ")
+	buffer.WriteString(entry.Message)
 
 	// 2022-02-20 03:27:20 INFO main.go:28 - log info output
-	log := fmt.Sprintf("%s %5s %s - %s\n", timestamp, colorfulLevel, buildCaller(entry), entry.Message)
-	buffer.WriteString(log)
 	return buffer.Bytes(), nil
 }
 
@@ -81,6 +92,9 @@ func buildCaller(entry *logrus.Entry) string {
 		if f, ok := fi.(string); ok {
 			file = f
 		}
+	}
+	if file == "xx" {
+		return ""
 	}
 	if li, ok := entry.Data["line"]; ok {
 		if l, ok := li.(int); ok {
