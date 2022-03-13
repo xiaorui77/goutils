@@ -46,6 +46,7 @@ func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
 
 	buffer.WriteString(" - ")
 	buffer.WriteString(entry.Message)
+	buffer.WriteString("\n")
 
 	// 2022-02-20 03:27:20 INFO main.go:28 - log info output
 	return buffer.Bytes(), nil
