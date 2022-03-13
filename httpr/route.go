@@ -1,7 +1,7 @@
 package httpr
 
 import (
-	"log"
+	"github.com/yougtao/goutils/logx"
 	"net/http"
 	"strings"
 )
@@ -20,8 +20,6 @@ func newRouter() *router {
 
 // only support simple path routing
 func (r *router) addRoute(method, pattern string, handler HandlerFunc) {
-	log.Printf("Route add: %4s - %s", method, pattern)
-
 	parts := splitPattern(pattern)
 	key := method + "-" + pattern
 	if _, ok := r.roots[method]; !ok {
@@ -65,7 +63,7 @@ func (r *router) handle(c *Context) {
 		if handler, ok := r.handlers[key]; ok {
 			handler(c)
 		} else {
-			log.Printf("route [%v] pares error", c.Path)
+			logx.Errorf("route [%v] pares error", c.Path)
 		}
 	} else {
 		c.StringWithHttpStatus(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
