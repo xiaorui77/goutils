@@ -19,7 +19,7 @@ func newRouter() *router {
 }
 
 // only support simple path routing
-func (r *router) addRoute(method, pattern string, handler HandlerFunc) {
+func (r *router) registerRoute(method, pattern string, handler HandlerFunc) {
 	parts := splitPattern(pattern)
 	key := method + "-" + pattern
 	if _, ok := r.roots[method]; !ok {
@@ -61,6 +61,7 @@ func (r *router) handle(c *Context) {
 		c.Params = params
 		key := c.Method + "-" + no.pattern
 		if handler, ok := r.handlers[key]; ok {
+			logx.Infof("[httpr] request %s - %s", c.Method, c.Path)
 			handler(c)
 		} else {
 			logx.Errorf("route [%v] pares error", c.Path)

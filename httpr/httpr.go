@@ -2,7 +2,7 @@
 package httpr
 
 import (
-	"github.com/yougtao/goutils/logx"
+	"github.com/xiaorui77/goutils/logx"
 	"net/http"
 )
 
@@ -35,8 +35,8 @@ func (e *Httpr) DELETE(pattern string, handler HandlerFunc) {
 }
 
 func (e *Httpr) addRoute(method, pattern string, handler HandlerFunc) {
-	logx.Infof("Route add: %4s - %s", method, pattern)
-	e.router.addRoute(method, pattern, handler)
+	logx.Infof("[httpr] Route register: %s - %s", method, pattern)
+	e.router.registerRoute(method, pattern, handler)
 }
 
 func (e *Httpr) ServeHTTP(w http.ResponseWriter, r *http.Request) {

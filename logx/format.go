@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"github.com/yougtao/goutils/timeutils"
+	"github.com/xiaorui77/goutils/timeutils"
 	"strings"
 )
 
