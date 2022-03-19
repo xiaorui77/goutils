@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"github.com/yougtao/goutils/timeutils"
 	"strings"
 )
-
-const defaultTimeFormat = "2006-01-02 15:04:05"
 
 const (
 	black  = 30
@@ -21,6 +20,8 @@ const (
 )
 
 type stdFormat struct {
+	colorful bool
+	caller   bool
 }
 
 func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
@@ -31,28 +32,29 @@ func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
 		buffer = &bytes.Buffer{}
 	}
 
-	timestamp := entry.Time.Format(defaultTimeFormat)
+	timestamp := entry.Time.Format(timeutils.DefaultTimeFormat)
 	buffer.WriteString(timestamp)
 
-	colorfulLevel := fmt.Sprintf("\033[%dm%5s\033[0m", getLevelColor(entry.Level), getLevelString(entry.Level))
+	level := coloring(levelString(entry.Level), levelColor(entry.Level), f.colorful)
 	buffer.WriteString(" ")
-	buffer.WriteString(colorfulLevel)
-
-	caller := buildCaller(entry)
-	if caller != "" {
-		buffer.WriteString(" ")
-		buffer.WriteString(caller)
-	}
-
+	buffer.WriteString(level)
 	buffer.WriteString(" - ")
 	buffer.WriteString(entry.Message)
-	buffer.WriteString("\n")
+
+	if f.caller {
+		caller := buildCaller(entry)
+		if caller != "" {
+			buffer.WriteString(" - ")
+			buffer.WriteString(coloring(caller, green, f.colorful))
+		}
+	}
 
 	// 2022-02-20 03:27:20 INFO main.go:28 - log info output
+	buffer.WriteString("\n")
 	return buffer.Bytes(), nil
 }
 
-func getLevelColor(level logrus.Level) int {
+func levelColor(level logrus.Level) int {
 	switch level {
 	case logrus.InfoLevel:
 		return green
@@ -66,16 +68,16 @@ func getLevelColor(level logrus.Level) int {
 	return green
 }
 
-func getLevelString(level logrus.Level) string {
+func levelString(level logrus.Level) string {
 	switch level {
 	case logrus.TraceLevel:
 		return "TRACE"
 	case logrus.DebugLevel:
-		return "DEBUG"
+		return "DEBGU"
 	case logrus.InfoLevel:
-		return "INFO"
+		return " INFO"
 	case logrus.WarnLevel:
-		return "WARN"
+		return " WARN"
 	case logrus.ErrorLevel:
 		return "ERROR"
 	case logrus.FatalLevel:

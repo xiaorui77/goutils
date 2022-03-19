@@ -17,7 +17,10 @@ type logX struct {
 
 func New() *logX {
 	log := logrus.New()
-	log.SetFormatter(&stdFormat{})
+	log.SetFormatter(&stdFormat{
+		colorful: true,
+		caller:   true,
+	})
 
 	return &logX{
 		logrus: log,
