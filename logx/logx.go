@@ -25,7 +25,7 @@ type logX struct {
 	entryPool *sync.Pool
 }
 
-func newLogx(name string) *logX {
+func NewLogx(name string) *logX {
 	logger := &logX{
 		name:         name,
 		instance:     name + "-0",
@@ -41,7 +41,7 @@ func newLogx(name string) *logX {
 	}
 	logger.entryPool = &sync.Pool{
 		New: func() interface{} {
-			return NewEntry(std)
+			return NewEntry(logger)
 		},
 	}
 	return logger
@@ -49,7 +49,7 @@ func newLogx(name string) *logX {
 
 func Init(name string, opts ...Option) {
 	if std == nil {
-		std = newLogx(name)
+		std = NewLogx(name)
 	}
 	for _, o := range opts {
 		o(std)
@@ -66,6 +66,10 @@ func SetInstance(instance string) {
 
 func SetLevel(level Level) {
 	std.SetLevel(level)
+}
+
+func SetReportCaller(reportCaller bool) {
+	std.SetReportCaller(reportCaller)
 }
 
 func SetOutput(output io.Writer) {
@@ -94,7 +98,7 @@ func WithLevel(level string) Option {
 
 func WithReportCaller(reportCaller bool) Option {
 	return func(l *logX) {
-		l.reportCaller = reportCaller
+		l.SetReportCaller(reportCaller)
 	}
 }
 
@@ -108,6 +112,10 @@ func WithOutput(out io.Writer) Option {
 
 func (l *logX) SetLevel(level Level) {
 	l.level = level
+}
+
+func (l *logX) SetReportCaller(reportCaller bool) {
+	l.reportCaller = reportCaller
 }
 
 func (l *logX) SetOutput(out io.Writer) {
@@ -137,73 +145,73 @@ func (l *logX) releaseEntry(entry *Entry) {
 
 // Print family functions
 
-func (l *logX) Log(level Level, args ...interface{}) {
+func (l *logX) Log(depth int, level Level, args ...interface{}) {
 	if l.IsLevelEnabled(level) {
 		entry := l.getEntry()
-		entry.Log(level, args...)
+		entry.Log(depth+1, level, fmt.Sprint(args...))
 		l.releaseEntry(entry)
 	}
 }
 
 func (l *logX) Debug(args ...interface{}) {
-	l.Log(DebugLevel, args...)
+	l.Log(2, DebugLevel, args...)
 }
 
 func (l *logX) Info(args ...interface{}) {
-	l.Log(InfoLevel, args...)
+	l.Log(2, InfoLevel, args...)
 }
 
 func (l *logX) Warn(args ...interface{}) {
-	l.Log(WarnLevel, args...)
+	l.Log(2, WarnLevel, args...)
 }
 
 func (l *logX) Error(args ...interface{}) {
-	l.Log(ErrorLevel, args...)
+	l.Log(2, ErrorLevel, args...)
 }
 
 func (l *logX) Fatal(args ...interface{}) {
-	l.Log(FatalLevel, args...)
+	l.Log(2, FatalLevel, args...)
 	os.Exit(1)
 }
 
 func (l *logX) Panic(args ...interface{}) {
-	l.Log(PanicLevel, args...)
+	l.Log(2, PanicLevel, args...)
 	panic(fmt.Sprint(args...))
 }
 
 // Printf family functions
 
-func (l *logX) Logf(level Level, format string, args ...interface{}) {
+func (l *logX) Logf(depth int, level Level, format string, args ...interface{}) {
 	if l.IsLevelEnabled(level) {
 		entry := l.getEntry()
-		entry.Log(level, fmt.Sprintf(format, args...))
+		entry.Log(depth+1, level, fmt.Sprintf(format, args...))
 		l.releaseEntry(entry)
 	}
 }
 
 func (l *logX) Debugf(format string, args ...interface{}) {
-	l.Logf(DebugLevel, format, args...)
+	l.Logf(2, DebugLevel, format, args...)
 }
 
 func (l *logX) Infof(format string, args ...interface{}) {
-	l.Logf(InfoLevel, format, args...)
+	l.Logf(2, InfoLevel, format, args...)
 }
 
 func (l *logX) Warnf(format string, args ...interface{}) {
-	l.Logf(WarnLevel, format, args...)
+	l.Logf(2, WarnLevel, format, args...)
 }
 
 func (l *logX) Errorf(format string, args ...interface{}) {
-	l.Logf(ErrorLevel, format, args...)
+	l.Logf(2, ErrorLevel, format, args...)
 }
 
 func (l *logX) Fatalf(format string, args ...interface{}) {
-	l.Logf(FatalLevel, format, args...)
+	l.Logf(2, FatalLevel, format, args...)
 	os.Exit(1)
 }
 
 func (l *logX) Panicf(format string, args ...interface{}) {
-	l.Logf(PanicLevel, format, args...)
+	l.Logf(2, PanicLevel, format, args...)
 	panic(fmt.Sprintf(format, args...))
 }
 
@@ -211,9 +219,9 @@ func (l *logX) Panicf(format string, args ...interface{}) {
 
 func Log(level Level, args ...interface{}) {
 	if std == nil {
-		std = newLogx("std")
+		std = NewLogx("std")
 	}
-	std.Log(level, args...)
+	std.Log(3, level, args...)
 }
 
 func Debug(args ...interface{}) { Log(DebugLevel, args...) }
@@ -232,9 +240,9 @@ func Fatal(args ...interface{}) { Log(FatalLevel, args...) }
 
 func Logf(level Level, format string, args ...interface{}) {
 	if std == nil {
-		std = newLogx("std")
+		std = NewLogx("std")
 	}
-	std.Logf(level, format, args...)
+	std.Logf(3, level, format, args...)
 }
 
 func Debugf(format string, args ...interface{}) { Logf(DebugLevel, format, args...) }

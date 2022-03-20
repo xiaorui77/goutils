@@ -12,7 +12,6 @@ import (
 
 var (
 	packageName        = "github.com/xiaorui77/goutils/logx"
-	minimumCallerDepth = 4
 	maximumCallerDepth = 25
 )
 
@@ -45,13 +44,13 @@ var bufferPool = &sync.Pool{
 	},
 }
 
-func (e *Entry) Log(level Level, args ...interface{}) {
-	if e.logger.IsLevelEnabled(level) {
-		e.log(level, fmt.Sprint(args...))
+// Log is entry point to the log package.
+// @param calldepath: An additional call number of lines to skip
+func (e *Entry) Log(calldepath int, level Level, msg string) {
+	if !e.logger.IsLevelEnabled(level) {
+		return
 	}
-}
 
-func (e *Entry) log(level Level, msg string) {
 	e.Level = level
 	e.Message = msg
 
@@ -60,7 +59,7 @@ func (e *Entry) log(level Level, msg string) {
 	}
 
 	if e.logger.reportCaller {
-		e.Caller = getCaller()
+		e.Caller = GetCaller(calldepath + 1)
 	}
 
 	// fire hooks
@@ -97,61 +96,61 @@ func (e *Entry) write() {
 // Print functions
 
 func (e *Entry) Debug(args ...interface{}) {
-	e.Log(DebugLevel, args...)
+	e.Log(1, DebugLevel, fmt.Sprint(fmt.Sprint(args...)))
 }
 
 func (e *Entry) Info(args ...interface{}) {
-	e.Log(InfoLevel, args...)
+	e.Log(1, InfoLevel, fmt.Sprint(args...))
 }
 
 func (e *Entry) Warn(args ...interface{}) {
-	e.Log(WarnLevel, args...)
+	e.Log(1, WarnLevel, fmt.Sprint(args...))
 }
 
 func (e *Entry) Error(args ...interface{}) {
-	e.Log(ErrorLevel, args...)
+	e.Log(1, ErrorLevel, fmt.Sprint(args...))
 }
 
 func (e *Entry) Fatal(args ...interface{}) {
-	e.Log(FatalLevel, args...)
+	e.Log(1, FatalLevel, fmt.Sprint(args...))
 }
 
 func (e *Entry) Panic(args ...interface{}) {
-	e.Log(PanicLevel, args...)
+	e.Log(1, PanicLevel, fmt.Sprint(args...))
 }
 
 // Printf family functions
 
 func (e *Entry) Debugf(format string, args ...interface{}) {
-	e.Log(DebugLevel, fmt.Sprintf(format, args...))
+	e.Log(1, DebugLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Infof(format string, args ...interface{}) {
-	e.Log(InfoLevel, fmt.Sprintf(format, args...))
+	e.Log(1, InfoLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Warnf(format string, args ...interface{}) {
-	e.Log(WarnLevel, fmt.Sprintf(format, args...))
+	e.Log(1, WarnLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Errorf(format string, args ...interface{}) {
-	e.Log(ErrorLevel, fmt.Sprintf(format, args...))
+	e.Log(1, ErrorLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Fatalf(format string, args ...interface{}) {
-	e.Log(FatalLevel, fmt.Sprintf(format, args...))
+	e.Log(1, FatalLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Panicf(format string, args ...interface{}) {
-	e.Log(PanicLevel, fmt.Sprintf(format, args...))
+	e.Log(1, PanicLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 // utils functions
 
-func getCaller() *runtime.Frame {
+func GetCaller(skip int) *runtime.Frame {
 	// Restrict the lookback frames to avoid runaway lookups
 	pcs := make([]uintptr, maximumCallerDepth)
-	depth := runtime.Callers(minimumCallerDepth, pcs)
+	depth := runtime.Callers(skip+1, pcs)
 	frames := runtime.CallersFrames(pcs[:depth])
 
 	for f, again := frames.Next(); again; f, again = frames.Next() {
