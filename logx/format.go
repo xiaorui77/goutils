@@ -3,7 +3,6 @@ package logx
 import (
 	"bytes"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/xiaorui77/goutils/timeutils"
 	"strings"
 )
@@ -19,12 +18,12 @@ const (
 	gray   = 37
 )
 
-type stdFormat struct {
+type TextFormat struct {
+	logger   *logX
 	colorful bool
-	caller   bool
 }
 
-func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
+func (f *TextFormat) Format(entry *Entry) ([]byte, error) {
 	var buffer *bytes.Buffer
 	if entry.Buffer != nil {
 		buffer = entry.Buffer
@@ -41,7 +40,7 @@ func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	buffer.WriteString(" - ")
 	buffer.WriteString(entry.Message)
 
-	if f.caller {
+	if f.logger.reportCaller && entry.Caller != nil {
 		caller := buildCaller(entry)
 		if caller != "" {
 			buffer.WriteString(" - ")
@@ -54,56 +53,41 @@ func (f *stdFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func levelColor(level logrus.Level) int {
+func levelColor(level Level) int {
 	switch level {
-	case logrus.InfoLevel:
+	case InfoLevel:
 		return green
-	case logrus.WarnLevel:
+	case WarnLevel:
 		return yellow
-	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
+	case ErrorLevel, FatalLevel, PanicLevel:
 		return red
-	case logrus.DebugLevel, logrus.TraceLevel:
+	case DebugLevel:
 		return gray
 	}
 	return green
 }
 
-func levelString(level logrus.Level) string {
+func levelString(level Level) string {
 	switch level {
-	case logrus.TraceLevel:
-		return "TRACE"
-	case logrus.DebugLevel:
+	case DebugLevel:
 		return "DEBGU"
-	case logrus.InfoLevel:
+	case InfoLevel:
 		return " INFO"
-	case logrus.WarnLevel:
+	case WarnLevel:
 		return " WARN"
-	case logrus.ErrorLevel:
+	case ErrorLevel:
 		return "ERROR"
-	case logrus.FatalLevel:
+	case FatalLevel:
 		return "FATAL"
-	case logrus.PanicLevel:
+	case PanicLevel:
 		return "PANIC"
 	}
 	return "UNKNOWN"
 }
 
-func buildCaller(entry *logrus.Entry) string {
-	file := "xx"
-	line := -1
-	if fi, ok := entry.Data["file"]; ok {
-		if f, ok := fi.(string); ok {
-			file = f
-		}
-	}
-	if file == "xx" {
-		return ""
-	}
-	if li, ok := entry.Data["line"]; ok {
-		if l, ok := li.(int); ok {
-			line = l
-		}
-	}
+func buildCaller(entry *Entry) string {
+	file := entry.Caller.File
+	line := entry.Caller.Line
 
 	if index := strings.LastIndex(file, "/"); index >= 0 {
 		file = file[index+1:]

@@ -3,8 +3,8 @@ package logx
 import "testing"
 
 func TestPrintf(t *testing.T) {
-	Init(OptReportCaller(true))
-	Printf("hello world: %s", "hello")
+	Init("test", WithReportCaller(true))
+
 	Debugf("hello world: %s", "debug")
 	Infof("hello world: %s", "info")
 	Warnf("hello world: %s", "warn")

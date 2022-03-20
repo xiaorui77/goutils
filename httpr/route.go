@@ -1,7 +1,7 @@
 package httpr
 
 import (
-	"github.com/yougtao/goutils/logx"
+	"github.com/xiaorui77/goutils/logx"
 	"net/http"
 	"strings"
 )

@@ -1,123 +1,270 @@
 package logx
 
 import (
+	"fmt"
 	"io"
-	"runtime"
-
-	"github.com/sirupsen/logrus"
+	"os"
+	"strings"
+	"sync"
+	"time"
 )
 
-var std = New()
+var std *logX
 
 type logX struct {
+	name     string
+	instance string
+
+	level        Level
 	reportCaller bool
 
-	logrus *logrus.Logger
+	Formater Formatter
+	Out      io.Writer
+	mu       *sync.Mutex
+
+	entryPool *sync.Pool
 }
 
-func New() *logX {
-	log := logrus.New()
-	log.SetFormatter(&stdFormat{
-		colorful: true,
-		caller:   true,
-	})
-
-	return &logX{
-		logrus: log,
+func newLogx(name string) *logX {
+	logger := &logX{
+		name:         name,
+		instance:     name + "-0",
+		level:        InfoLevel,
+		reportCaller: false,
+		Out:          os.Stdout,
+		mu:           new(sync.Mutex),
 	}
+
+	logger.Formater = &TextFormat{
+		logger:   logger,
+		colorful: true,
+	}
+	logger.entryPool = &sync.Pool{
+		New: func() interface{} {
+			return NewEntry(std)
+		},
+	}
+	return logger
 }
 
-func Init(opts ...Option) {
+func Init(name string, opts ...Option) {
+	if std == nil {
+		std = newLogx(name)
+	}
 	for _, o := range opts {
 		o(std)
 	}
 }
 
-func SetLevel(level logrus.Level) {
-	std.logrus.SetLevel(level)
+func SetName(name string) {
+	std.name = name
+}
+
+func SetInstance(instance string) {
+	std.instance = instance
+}
+
+func SetLevel(level Level) {
+	std.SetLevel(level)
 }
 
 func SetOutput(output io.Writer) {
-	std.logrus.SetOutput(output)
+	std.SetOutput(output)
+}
+
+func (l *logX) fireHooks() {
+
 }
 
 // Option Pattern
 
 type Option func(l *logX)
 
-func OptLevel(level string) Option {
+func WithInstance(name string) Option {
 	return func(l *logX) {
-		lv, err := logrus.ParseLevel(level)
-		if err != nil {
-			// default Info
-			lv = logrus.InfoLevel
-		}
-		l.logrus.SetLevel(logrus.Level(lv))
+		l.instance = name
 	}
 }
 
-func OptReportCaller(reportCaller bool) Option {
+func WithLevel(level string) Option {
+	return func(l *logX) {
+		l.SetLevel(ParseLevel(level))
+	}
+}
+
+func WithReportCaller(reportCaller bool) Option {
 	return func(l *logX) {
 		l.reportCaller = reportCaller
 	}
 }
 
-func OptOutput() Option {
+func WithOutput(out io.Writer) Option {
 	return func(l *logX) {
-		l.logrus.SetOutput(l.logrus.Out)
+		l.SetOutput(out)
 	}
+}
+
+// useful methods
+
+func (l *logX) SetLevel(level Level) {
+	l.level = level
+}
+
+func (l *logX) SetOutput(out io.Writer) {
+	l.Out = out
+}
+
+// inner methods
+
+func (l *logX) IsLevelEnabled(level Level) bool {
+	return l.level >= level
+}
+
+func (l *logX) getEntry() *Entry {
+	entry, ok := l.entryPool.Get().(*Entry)
+	if ok {
+		entry.Time = time.Now()
+		entry.Fields = make(Fields, 4)
+		return entry
+	}
+	return NewEntry(l)
+}
+
+func (l *logX) releaseEntry(entry *Entry) {
+	entry.Fields = nil
+	l.entryPool.Put(entry)
 }
 
 // Print family functions
 
-func Log(level logrus.Level, args ...interface{}) {
-	var field logrus.Fields
-	if std.reportCaller {
-		_, file, line, _ := runtime.Caller(2)
-		field = logrus.Fields{"file": file, "line": line}
+func (l *logX) Log(level Level, args ...interface{}) {
+	if l.IsLevelEnabled(level) {
+		entry := l.getEntry()
+		entry.Log(level, args...)
+		l.releaseEntry(entry)
 	}
-	std.logrus.WithFields(field).Log(level, args...)
 }
 
-func Trace(args ...interface{}) { Log(logrus.TraceLevel, args...) }
+func (l *logX) Debug(args ...interface{}) {
+	l.Log(DebugLevel, args...)
+}
 
-func Debug(args ...interface{}) { Log(logrus.DebugLevel, args...) }
+func (l *logX) Info(args ...interface{}) {
+	l.Log(InfoLevel, args...)
+}
 
-func Print(args ...interface{}) { Log(logrus.InfoLevel, args...) }
+func (l *logX) Warn(args ...interface{}) {
+	l.Log(WarnLevel, args...)
+}
 
-func Info(args ...interface{}) { Log(logrus.InfoLevel, args...) }
+func (l *logX) Error(args ...interface{}) {
+	l.Log(ErrorLevel, args...)
+}
 
-func Warn(args ...interface{}) { Log(logrus.WarnLevel, args...) }
+func (l *logX) Fatal(args ...interface{}) {
+	l.Log(FatalLevel, args...)
+	os.Exit(1)
+}
 
-func Error(args ...interface{}) { Log(logrus.ErrorLevel, args...) }
-
-func Panic(args ...interface{}) { Log(logrus.PanicLevel, args...) }
-
-func Fatal(args ...interface{}) { Log(logrus.FatalLevel, args...) }
+func (l *logX) Panic(args ...interface{}) {
+	l.Log(PanicLevel, args...)
+	panic(fmt.Sprint(args...))
+}
 
 // Printf family functions
 
-func Logf(level logrus.Level, format string, args ...interface{}) {
-	var field logrus.Fields
-	if std.reportCaller {
-		_, file, line, _ := runtime.Caller(2)
-		field = logrus.Fields{"file": file, "line": line}
+func (l *logX) Logf(level Level, format string, args ...interface{}) {
+	if l.IsLevelEnabled(level) {
+		entry := l.getEntry()
+		entry.Log(level, fmt.Sprintf(format, args...))
+		l.releaseEntry(entry)
 	}
-	std.logrus.WithFields(field).Logf(level, format, args...)
 }
 
-func Tracef(format string, args ...interface{}) { Logf(logrus.TraceLevel, format, args...) }
+func (l *logX) Debugf(format string, args ...interface{}) {
+	l.Logf(DebugLevel, format, args...)
+}
 
-func Debugf(format string, args ...interface{}) { Logf(logrus.DebugLevel, format, args...) }
+func (l *logX) Infof(format string, args ...interface{}) {
+	l.Logf(InfoLevel, format, args...)
+}
 
-func Printf(format string, args ...interface{}) { Logf(logrus.InfoLevel, format, args...) }
+func (l *logX) Warnf(format string, args ...interface{}) {
+	l.Logf(WarnLevel, format, args...)
+}
 
-func Infof(format string, args ...interface{}) { Logf(logrus.InfoLevel, format, args...) }
+func (l *logX) Errorf(format string, args ...interface{}) {
+	l.Logf(ErrorLevel, format, args...)
+}
 
-func Warnf(format string, args ...interface{}) { Logf(logrus.WarnLevel, format, args...) }
+func (l *logX) Fatalf(format string, args ...interface{}) {
+	l.Logf(FatalLevel, format, args...)
+	os.Exit(1)
+}
 
-func Errorf(format string, args ...interface{}) { Logf(logrus.ErrorLevel, format, args...) }
+func (l *logX) Panicf(format string, args ...interface{}) {
+	l.Logf(PanicLevel, format, args...)
+	panic(fmt.Sprintf(format, args...))
+}
 
-func Panicf(format string, args ...interface{}) { Logf(logrus.PanicLevel, format, args...) }
+// Global Print family functions
 
-func Fatalf(format string, args ...interface{}) { Logf(logrus.FatalLevel, format, args...) }
+func Log(level Level, args ...interface{}) {
+	if std == nil {
+		std = newLogx("std")
+	}
+	std.Log(level, args...)
+}
+
+func Debug(args ...interface{}) { Log(DebugLevel, args...) }
+
+func Info(args ...interface{}) { Log(InfoLevel, args...) }
+
+func Warn(args ...interface{}) { Log(WarnLevel, args...) }
+
+func Error(args ...interface{}) { Log(ErrorLevel, args...) }
+
+func Panic(args ...interface{}) { Log(PanicLevel, args...) }
+
+func Fatal(args ...interface{}) { Log(FatalLevel, args...) }
+
+// Printf family functions
+
+func Logf(level Level, format string, args ...interface{}) {
+	if std == nil {
+		std = newLogx("std")
+	}
+	std.Logf(level, format, args...)
+}
+
+func Debugf(format string, args ...interface{}) { Logf(DebugLevel, format, args...) }
+
+func Infof(format string, args ...interface{}) { Logf(InfoLevel, format, args...) }
+
+func Warnf(format string, args ...interface{}) { Logf(WarnLevel, format, args...) }
+
+func Errorf(format string, args ...interface{}) { Logf(ErrorLevel, format, args...) }
+
+func Panicf(format string, args ...interface{}) { Logf(PanicLevel, format, args...) }
+
+func Fatalf(format string, args ...interface{}) { Logf(FatalLevel, format, args...) }
+
+// Utils functions
+
+func ParseLevel(lvl string) Level {
+	switch strings.ToLower(lvl) {
+	case "panic":
+		return PanicLevel
+	case "fatal":
+		return FatalLevel
+	case "error":
+		return ErrorLevel
+	case "warn", "warning":
+		return WarnLevel
+	case "info":
+		return InfoLevel
+	case "debug":
+		return DebugLevel
+	}
+	return InfoLevel
+}
