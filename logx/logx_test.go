@@ -3,7 +3,7 @@ package logx
 import "testing"
 
 func TestPrintf(t *testing.T) {
-	Init("test", WithReportCaller(true))
+	Init("test", WithInstance("test"), WithReportCaller(true), WithLevel(DebugLevel), WithLevelS("debug"))
 
 	Debugf("hello world: %s", "debug")
 	Infof("hello world: %s", "info")

@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-var std *logX
+var std = NewLogx("std")
+var once sync.Once
 
 type logX struct {
 	name     string
@@ -48,12 +49,14 @@ func NewLogx(name string) *logX {
 }
 
 func Init(name string, opts ...Option) {
-	if std == nil {
-		std = NewLogx(name)
-	}
-	for _, o := range opts {
-		o(std)
-	}
+	once.Do(func() {
+		if std == nil || std.name == "std" {
+			std = NewLogx(name)
+			for _, o := range opts {
+				o(std)
+			}
+		}
+	})
 }
 
 func SetName(name string) {
@@ -68,6 +71,10 @@ func SetLevel(level Level) {
 	std.SetLevel(level)
 }
 
+func SetLevelS(level string) {
+	std.SetLevel(ParseLevel(level))
+}
+
 func SetReportCaller(reportCaller bool) {
 	std.SetReportCaller(reportCaller)
 }
@@ -80,7 +87,7 @@ func (l *logX) fireHooks() {
 
 }
 
-// Option Pattern
+// Option Pattern functions
 
 type Option func(l *logX)
 
@@ -90,9 +97,15 @@ func WithInstance(name string) Option {
 	}
 }
 
-func WithLevel(level string) Option {
+func WithLevelS(level string) Option {
 	return func(l *logX) {
 		l.SetLevel(ParseLevel(level))
+	}
+}
+
+func WithLevel(level Level) Option {
+	return func(l *logX) {
+		l.SetLevel(level)
 	}
 }
 
@@ -112,6 +125,10 @@ func WithOutput(out io.Writer) Option {
 
 func (l *logX) SetLevel(level Level) {
 	l.level = level
+}
+
+func (l *logX) SetLevelS(level string) {
+	l.SetLevel(ParseLevel(level))
 }
 
 func (l *logX) SetReportCaller(reportCaller bool) {
@@ -218,9 +235,6 @@ func (l *logX) Panicf(format string, args ...interface{}) {
 // Global Print family functions
 
 func Log(level Level, args ...interface{}) {
-	if std == nil {
-		std = NewLogx("std")
-	}
 	std.Log(3, level, args...)
 }
 
@@ -239,9 +253,6 @@ func Fatal(args ...interface{}) { Log(FatalLevel, args...) }
 // Printf family functions
 
 func Logf(level Level, format string, args ...interface{}) {
-	if std == nil {
-		std = NewLogx("std")
-	}
 	std.Logf(3, level, format, args...)
 }
 
