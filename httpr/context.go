@@ -105,7 +105,7 @@ func (c *Context) error(status int, err error) {
 type Result struct {
 	RequestId string `json:"requestId"`
 
-	code int         `json:"code"`
+	Code int         `json:"code"`
 	Msg  string      `json:"msg"`
 	Data interface{} `json:"data"`
 }
@@ -113,7 +113,7 @@ type Result struct {
 func (c *Context) Result(message string, data interface{}, err error) {
 	result := &Result{}
 	if err != nil {
-		result.code = -1
+		result.Code = -1
 		result.Msg = err.Error()
 	} else {
 		result.Msg = message
@@ -128,11 +128,11 @@ func (c *Context) ResultError(err error) {
 
 func (c *Context) ResultErrorWithCode(code int, err error) {
 	result := &Result{
-		code: -1,
+		Code: -1,
 		Msg:  "internal error",
 	}
 	if err != nil {
-		result.code = code
+		result.Code = code
 		result.Msg = err.Error()
 	}
 	c.JSON(result)
@@ -141,7 +141,7 @@ func (c *Context) ResultErrorWithCode(code int, err error) {
 func (c *Context) ResultMessage(message string, err error) {
 	result := &Result{}
 	if err != nil {
-		result.code = -1
+		result.Code = -1
 		result.Msg = err.Error()
 	} else {
 		result.Msg = message
@@ -152,7 +152,7 @@ func (c *Context) ResultMessage(message string, err error) {
 func (c *Context) ResultData(data interface{}, err error) {
 	result := &Result{}
 	if err != nil {
-		result.code = -1
+		result.Code = -1
 		result.Msg = err.Error()
 	} else {
 		result.Msg = "success"

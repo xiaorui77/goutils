@@ -26,7 +26,7 @@ type logX struct {
 	entryPool *sync.Pool
 }
 
-func NewLogx(name string) *logX {
+func NewLogx(name string, opts ...Option) *logX {
 	logger := &logX{
 		name:         name,
 		instance:     name + "-0",
@@ -45,16 +45,18 @@ func NewLogx(name string) *logX {
 			return NewEntry(logger)
 		},
 	}
+
+	// handle options
+	for _, o := range opts {
+		o(std)
+	}
 	return logger
 }
 
 func Init(name string, opts ...Option) {
 	once.Do(func() {
 		if std == nil || std.name == "std" {
-			std = NewLogx(name)
-			for _, o := range opts {
-				o(std)
-			}
+			std = NewLogx(name, opts...)
 		}
 	})
 }
@@ -234,6 +236,8 @@ func (l *logX) Panicf(format string, args ...interface{}) {
 
 // Global Print family functions
 
+// Log 可以打印指定级别的日志,
+// 如果想打印出调用的方法是, 请不要直接使用这个方法, 可以封装一层, 因为它会跳过y
 func Log(level Level, args ...interface{}) {
 	std.Log(3, level, args...)
 }
@@ -246,9 +250,15 @@ func Warn(args ...interface{}) { Log(WarnLevel, args...) }
 
 func Error(args ...interface{}) { Log(ErrorLevel, args...) }
 
-func Panic(args ...interface{}) { Log(PanicLevel, args...) }
+func Fatal(args ...interface{}) {
+	Log(FatalLevel, args...)
+	os.Exit(1)
+}
 
-func Fatal(args ...interface{}) { Log(FatalLevel, args...) }
+func Panic(args ...interface{}) {
+	Log(PanicLevel, args...)
+	panic(fmt.Sprint(args...))
+}
 
 // Printf family functions
 
@@ -264,9 +274,15 @@ func Warnf(format string, args ...interface{}) { Logf(WarnLevel, format, args...
 
 func Errorf(format string, args ...interface{}) { Logf(ErrorLevel, format, args...) }
 
-func Panicf(format string, args ...interface{}) { Logf(PanicLevel, format, args...) }
+func Fatalf(format string, args ...interface{}) {
+	Logf(FatalLevel, format, args...)
+	os.Exit(1)
+}
 
-func Fatalf(format string, args ...interface{}) { Logf(FatalLevel, format, args...) }
+func Panicf(format string, args ...interface{}) {
+	Logf(PanicLevel, format, args...)
+	panic(fmt.Sprintf(format, args...))
+}
 
 // Utils functions
 
