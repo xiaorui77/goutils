@@ -48,7 +48,7 @@ func NewLogx(name string, opts ...Option) *logX {
 
 	// handle options
 	for _, o := range opts {
-		o(std)
+		o(logger)
 	}
 	return logger
 }

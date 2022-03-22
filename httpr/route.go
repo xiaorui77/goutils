@@ -4,6 +4,7 @@ import (
 	"github.com/xiaorui77/goutils/logx"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type router struct {
@@ -61,8 +62,13 @@ func (r *router) handle(c *Context) {
 		c.Params = params
 		key := c.Method + "-" + no.pattern
 		if handler, ok := r.handlers[key]; ok {
-			logx.Infof("[httpr] request %s - %s", c.Method, c.Path)
+			if requestId := c.Request.Header.Get("X-Request-Id"); requestId != "" {
+				c.RequestId = requestId
+			}
+			begin := time.Now()
+			logx.Infof("[httpr] request [%s] %s - %s", c.RequestId, c.Method, c.Path)
 			handler(c)
+			logx.Debugf("[httpr] response [%s] complete, cost %s", c.RequestId, time.Now().Sub(begin).String())
 		} else {
 			logx.Errorf("route [%v] pares error", c.Path)
 		}

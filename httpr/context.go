@@ -3,6 +3,7 @@ package httpr
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/xiaorui77/goutils/math"
 	"net/http"
 )
 
@@ -11,6 +12,8 @@ type H map[string]interface{}
 type Context struct {
 	Request *http.Request
 	Writer  http.ResponseWriter
+
+	RequestId string
 
 	Method string
 	Path   string
@@ -21,8 +24,10 @@ func NewContext(w http.ResponseWriter, r *http.Request) *Context {
 	return &Context{
 		Request: r,
 		Writer:  w,
-		Method:  r.Method,
-		Path:    r.URL.Path,
+
+		RequestId: math.Random16Str(32),
+		Method:    r.Method,
+		Path:      r.URL.Path,
 	}
 }
 
