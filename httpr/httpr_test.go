@@ -30,3 +30,8 @@ func TestHttpr_GET(t *testing.T) {
 	_, _ = http.Get("http://127.0.0.1:8080/hello")
 	time.Sleep(time.Second * 3)
 }
+
+func TestGenerateRequestId(t *testing.T) {
+	requestId := generateRequestId("192.168.2.1:1234")
+	t.Skipf("%s", requestId)
+}

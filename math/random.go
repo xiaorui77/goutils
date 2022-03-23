@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-const number = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_+=!@#$%^&*()"
-
 // rand seeds
 var seed = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -27,7 +25,7 @@ func RandomStr(len, base int) string {
 	}
 	str := make([]byte, len)
 	for i := 0; i < len; i++ {
-		str[i] = number[seed.Intn(base)]
+		str[i] = baseNumber[seed.Intn(base)]
 	}
 	return string(str)
 }

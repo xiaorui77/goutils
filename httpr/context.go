@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/xiaorui77/goutils/math"
+	"net"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type H map[string]interface{}
@@ -21,14 +25,19 @@ type Context struct {
 }
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
-	return &Context{
+	c := &Context{
 		Request: r,
 		Writer:  w,
-
-		RequestId: math.Random16Str(32),
-		Method:    r.Method,
-		Path:      r.URL.Path,
+		Method:  r.Method,
+		Path:    r.URL.Path,
 	}
+	// set requestId
+	if requestId := r.Header.Get("x-request-id"); requestId != "" {
+		c.RequestId = requestId
+	} else {
+		c.RequestId = generateRequestId(r.RemoteAddr)
+	}
+	return c
 }
 
 func (c *Context) PostForm(key string) string {
@@ -116,7 +125,7 @@ type Result struct {
 }
 
 func (c *Context) Result(message string, data interface{}, err error) {
-	result := &Result{}
+	result := &Result{RequestId: c.RequestId}
 	if err != nil {
 		result.Code = -1
 		result.Msg = err.Error()
@@ -132,19 +141,17 @@ func (c *Context) ResultError(err error) {
 }
 
 func (c *Context) ResultErrorWithCode(code int, err error) {
-	result := &Result{
-		Code: -1,
-		Msg:  "internal error",
-	}
+	result := &Result{RequestId: c.RequestId, Code: code}
 	if err != nil {
-		result.Code = code
 		result.Msg = err.Error()
+	} else {
+		result.Msg = "internal error"
 	}
 	c.JSON(result)
 }
 
 func (c *Context) ResultMessage(message string, err error) {
-	result := &Result{}
+	result := &Result{RequestId: c.RequestId}
 	if err != nil {
 		result.Code = -1
 		result.Msg = err.Error()
@@ -155,7 +162,7 @@ func (c *Context) ResultMessage(message string, err error) {
 }
 
 func (c *Context) ResultData(data interface{}, err error) {
-	result := &Result{}
+	result := &Result{RequestId: c.RequestId}
 	if err != nil {
 		result.Code = -1
 		result.Msg = err.Error()
@@ -164,4 +171,26 @@ func (c *Context) ResultData(data interface{}, err error) {
 		result.Data = data
 	}
 	c.JSON(result)
+}
+
+// Utils functions
+
+// 生成requestId, timestamp(12)-ip(12)-random(8)
+func generateRequestId(addr string) string {
+	res := fmt.Sprintf("%012s-", math.Base(uint64(time.Now().UnixMilli()), 16))
+	split := strings.Split(addr, ":")
+	if len(split) == 2 {
+		ip := net.ParseIP(split[0])
+		res += fmt.Sprintf("%02s", math.Base(uint64(ip[12]), 16))
+		res += fmt.Sprintf("%02s", math.Base(uint64(ip[13]), 16))
+		res += fmt.Sprintf("%02s", math.Base(uint64(ip[14]), 16))
+		res += fmt.Sprintf("%02s", math.Base(uint64(ip[15]), 16))
+		if port, err := strconv.Atoi(split[1]); err == nil {
+			res += fmt.Sprintf("%04s", math.Base(uint64(port), 16))
+		} else {
+			res += math.Random16Str(4)
+		}
+	}
+	res += fmt.Sprintf("-%s", math.Random16Str(8))
+	return res
 }
