@@ -1,8 +1,10 @@
-package logx
+package formatters
 
 import (
 	"bytes"
 	"fmt"
+	"github.com/xiaorui77/goutils/coloring"
+	"github.com/xiaorui77/goutils/logx"
 	"github.com/xiaorui77/goutils/timeutils"
 	"strings"
 )
@@ -18,12 +20,19 @@ const (
 	gray   = 37
 )
 
-type TextFormat struct {
-	logger   *logX
+type TextFormatter struct {
+	logger   *logx.LogX
 	colorful bool
 }
 
-func (f *TextFormat) Format(entry *Entry) ([]byte, error) {
+func NewTextFormatter(logger *logx.LogX, colorful bool) *TextFormatter {
+	return &TextFormatter{
+		logger:   logger,
+		colorful: colorful,
+	}
+}
+
+func (f *TextFormatter) Format(entry *logx.Entry) ([]byte, error) {
 	var buffer *bytes.Buffer
 	if entry.Buffer != nil {
 		buffer = entry.Buffer
@@ -34,17 +43,17 @@ func (f *TextFormat) Format(entry *Entry) ([]byte, error) {
 	timestamp := entry.Time.Format(timeutils.DefaultTimeFormat)
 	buffer.WriteString(timestamp)
 
-	level := coloring(levelString(entry.Level), levelColor(entry.Level), f.colorful)
+	level := coloring.Coloring(levelString(entry.Level), levelColor(entry.Level), f.colorful)
 	buffer.WriteString(" ")
 	buffer.WriteString(level)
 	buffer.WriteString(" - ")
 	buffer.WriteString(entry.Message)
 
-	if f.logger.reportCaller && entry.Caller != nil {
+	if f.logger.ReportCaller && entry.Caller != nil {
 		caller := buildCaller(entry)
 		if caller != "" {
 			buffer.WriteString(" - ")
-			buffer.WriteString(coloring(caller, green, f.colorful))
+			buffer.WriteString(coloring.Coloring(caller, green, f.colorful))
 		}
 	}
 
@@ -53,39 +62,39 @@ func (f *TextFormat) Format(entry *Entry) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func levelColor(level Level) int {
+func levelColor(level logx.Level) int {
 	switch level {
-	case InfoLevel:
+	case logx.InfoLevel:
 		return green
-	case WarnLevel:
+	case logx.WarnLevel:
 		return yellow
-	case ErrorLevel, FatalLevel, PanicLevel:
+	case logx.ErrorLevel, logx.FatalLevel, logx.PanicLevel:
 		return red
-	case DebugLevel:
+	case logx.DebugLevel:
 		return gray
 	}
 	return green
 }
 
-func levelString(level Level) string {
+func levelString(level logx.Level) string {
 	switch level {
-	case DebugLevel:
+	case logx.DebugLevel:
 		return "DEBGU"
-	case InfoLevel:
+	case logx.InfoLevel:
 		return " INFO"
-	case WarnLevel:
+	case logx.WarnLevel:
 		return " WARN"
-	case ErrorLevel:
+	case logx.ErrorLevel:
 		return "ERROR"
-	case FatalLevel:
+	case logx.FatalLevel:
 		return "FATAL"
-	case PanicLevel:
+	case logx.PanicLevel:
 		return "PANIC"
 	}
 	return "UNKNOWN"
 }
 
-func buildCaller(entry *Entry) string {
+func buildCaller(entry *logx.Entry) string {
 	file := entry.Caller.File
 	line := entry.Caller.Line
 

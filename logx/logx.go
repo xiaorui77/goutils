@@ -2,6 +2,8 @@ package logx
 
 import (
 	"fmt"
+	"github.com/xiaorui77/goutils/logx/formatters"
+	"github.com/xiaorui77/goutils/logx/hooks"
 	"io"
 	"os"
 	"strings"
@@ -12,34 +14,32 @@ import (
 var std = NewLogx("std")
 var once sync.Once
 
-type logX struct {
-	name     string
+type LogX struct {
+	Name     string
 	instance string
 
 	level        Level
-	reportCaller bool
+	ReportCaller bool
 
-	Formater Formatter
-	Out      io.Writer
-	mu       *sync.Mutex
+	Formatter Formatter
+	Out       io.Writer
+	mu        *sync.Mutex
+	hooks     map[Level][]Hook
 
 	entryPool *sync.Pool
 }
 
-func NewLogx(name string, opts ...Option) *logX {
-	logger := &logX{
-		name:         name,
+func NewLogx(name string, opts ...Option) *LogX {
+	logger := &LogX{
+		Name:         name,
 		instance:     name + "-0",
 		level:        InfoLevel,
-		reportCaller: false,
+		ReportCaller: false,
 		Out:          os.Stdout,
 		mu:           new(sync.Mutex),
 	}
 
-	logger.Formater = &TextFormat{
-		logger:   logger,
-		colorful: true,
-	}
+	logger.Formatter = formatters.NewTextFormatter(logger, true)
 	logger.entryPool = &sync.Pool{
 		New: func() interface{} {
 			return NewEntry(logger)
@@ -55,14 +55,14 @@ func NewLogx(name string, opts ...Option) *logX {
 
 func Init(name string, opts ...Option) {
 	once.Do(func() {
-		if std == nil || std.name == "std" {
+		if std == nil || std.Name == "std" {
 			std = NewLogx(name, opts...)
 		}
 	})
 }
 
 func SetName(name string) {
-	std.name = name
+	std.Name = name
 }
 
 func SetInstance(instance string) {
@@ -85,69 +85,71 @@ func SetOutput(output io.Writer) {
 	std.SetOutput(output)
 }
 
-func (l *logX) fireHooks() {
-
+func AddHook(hook Hook) {
+	std.AddHook(hook)
 }
 
 // Option Pattern functions
 
-type Option func(l *logX)
+type Option func(l *LogX)
 
 func WithInstance(name string) Option {
-	return func(l *logX) {
+	return func(l *LogX) {
 		l.instance = name
 	}
 }
 
-func WithLevelS(level string) Option {
-	return func(l *logX) {
-		l.SetLevel(ParseLevel(level))
-	}
-}
-
 func WithLevel(level Level) Option {
-	return func(l *logX) {
+	return func(l *LogX) {
 		l.SetLevel(level)
 	}
 }
 
 func WithReportCaller(reportCaller bool) Option {
-	return func(l *logX) {
+	return func(l *LogX) {
 		l.SetReportCaller(reportCaller)
 	}
 }
 
 func WithOutput(out io.Writer) Option {
-	return func(l *logX) {
+	return func(l *LogX) {
 		l.SetOutput(out)
+	}
+}
+
+func WithHook(hook Hook) Option {
+	return func(l *LogX) {
+		l.AddHook(hook)
+	}
+}
+
+func WithEsHook(host string) Option {
+	return func(l *LogX) {
+		l.AddHook(hooks.NewEsHook(host))
 	}
 }
 
 // useful methods
 
-func (l *logX) SetLevel(level Level) {
+func (l *LogX) SetLevel(level Level) {
 	l.level = level
 }
 
-func (l *logX) SetLevelS(level string) {
-	l.SetLevel(ParseLevel(level))
+func (l *LogX) SetReportCaller(reportCaller bool) {
+	l.ReportCaller = reportCaller
 }
 
-func (l *logX) SetReportCaller(reportCaller bool) {
-	l.reportCaller = reportCaller
-}
-
-func (l *logX) SetOutput(out io.Writer) {
+func (l *LogX) SetOutput(out io.Writer) {
 	l.Out = out
 }
 
 // inner methods
 
-func (l *logX) IsLevelEnabled(level Level) bool {
+func (l *LogX) IsLevelEnabled(level Level) bool {
 	return l.level >= level
 }
 
-func (l *logX) getEntry() *Entry {
+func (l *LogX) getEntry() *Entry {
 	entry, ok := l.entryPool.Get().(*Entry)
 	if ok {
 		entry.Time = time.Now()
@@ -157,14 +159,14 @@ func (l *logX) getEntry() *Entry {
 	return NewEntry(l)
 }
 
-func (l *logX) releaseEntry(entry *Entry) {
+func (l *LogX) releaseEntry(entry *Entry) {
 	entry.Fields = nil
 	l.entryPool.Put(entry)
 }
 
 // Print family functions
 
-func (l *logX) Log(depth int, level Level, args ...interface{}) {
+func (l *LogX) Log(depth int, level Level, args ...interface{}) {
 	if l.IsLevelEnabled(level) {
 		entry := l.getEntry()
 		entry.Log(depth+1, level, fmt.Sprint(args...))
@@ -172,35 +174,35 @@ func (l *logX) Log(depth int, level Level, args ...interface{}) {
 	}
 }
 
-func (l *logX) Debug(args ...interface{}) {
+func (l *LogX) Debug(args ...interface{}) {
 	l.Log(2, DebugLevel, args...)
 }
 
-func (l *logX) Info(args ...interface{}) {
+func (l *LogX) Info(args ...interface{}) {
 	l.Log(2, InfoLevel, args...)
 }
 
-func (l *logX) Warn(args ...interface{}) {
+func (l *LogX) Warn(args ...interface{}) {
 	l.Log(2, WarnLevel, args...)
 }
 
-func (l *logX) Error(args ...interface{}) {
+func (l *LogX) Error(args ...interface{}) {
 	l.Log(2, ErrorLevel, args...)
 }
 
-func (l *logX) Fatal(args ...interface{}) {
+func (l *LogX) Fatal(args ...interface{}) {
 	l.Log(2, FatalLevel, args...)
 	os.Exit(1)
 }
 
-func (l *logX) Panic(args ...interface{}) {
+func (l *LogX) Panic(args ...interface{}) {
 	l.Log(2, PanicLevel, args...)
 	panic(fmt.Sprint(args...))
 }
 
 // Printf family functions
 
-func (l *logX) Logf(depth int, level Level, format string, args ...interface{}) {
+func (l *LogX) Logf(depth int, level Level, format string, args ...interface{}) {
 	if l.IsLevelEnabled(level) {
 		entry := l.getEntry()
 		entry.Log(depth+1, level, fmt.Sprintf(format, args...))
@@ -208,28 +210,28 @@ func (l *logX) Logf(depth int, level Level, format string, args ...interface{}) 
 	}
 }
 
-func (l *logX) Debugf(format string, args ...interface{}) {
+func (l *LogX) Debugf(format string, args ...interface{}) {
 	l.Logf(2, DebugLevel, format, args...)
 }
 
-func (l *logX) Infof(format string, args ...interface{}) {
+func (l *LogX) Infof(format string, args ...interface{}) {
 	l.Logf(2, InfoLevel, format, args...)
 }
 
-func (l *logX) Warnf(format string, args ...interface{}) {
+func (l *LogX) Warnf(format string, args ...interface{}) {
 	l.Logf(2, WarnLevel, format, args...)
 }
 
-func (l *logX) Errorf(format string, args ...interface{}) {
+func (l *LogX) Errorf(format string, args ...interface{}) {
 	l.Logf(2, ErrorLevel, format, args...)
 }
 
-func (l *logX) Fatalf(format string, args ...interface{}) {
+func (l *LogX) Fatalf(format string, args ...interface{}) {
 	l.Logf(2, FatalLevel, format, args...)
 	os.Exit(1)
 }
 
-func (l *logX) Panicf(format string, args ...interface{}) {
+func (l *LogX) Panicf(format string, args ...interface{}) {
 	l.Logf(2, PanicLevel, format, args...)
 	panic(fmt.Sprintf(format, args...))
 }

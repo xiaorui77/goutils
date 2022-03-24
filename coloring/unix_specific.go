@@ -1,10 +1,10 @@
 //go:build !windows
 
-package logx
+package coloring
 
 import "strconv"
 
-func coloring(str string, color int, enable bool) string {
+func Coloring(str string, color int, enable bool) string {
 	if !enable {
 		return str
 	}

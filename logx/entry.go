@@ -16,7 +16,7 @@ var (
 )
 
 type Entry struct {
-	logger *logX
+	Logger *LogX
 
 	Time time.Time
 
@@ -31,9 +31,9 @@ type Entry struct {
 	Buffer *bytes.Buffer
 }
 
-func NewEntry(l *logX) *Entry {
+func NewEntry(l *LogX) *Entry {
 	return &Entry{
-		logger: l,
+		Logger: l,
 		Fields: make(Fields, 4),
 	}
 }
@@ -47,7 +47,7 @@ var bufferPool = &sync.Pool{
 // Log is entry point to the log package.
 // @param calldepath: An additional call number of lines to skip
 func (e *Entry) Log(calldepath int, level Level, msg string) {
-	if !e.logger.IsLevelEnabled(level) {
+	if !e.Logger.IsLevelEnabled(level) {
 		return
 	}
 
@@ -58,14 +58,14 @@ func (e *Entry) Log(calldepath int, level Level, msg string) {
 		e.Time = time.Now()
 	}
 
-	if e.logger.reportCaller {
+	if e.Logger.ReportCaller {
 		e.Caller = GetCaller(calldepath + 1)
 	}
 
 	// fire hooks
-	e.logger.fireHooks()
+	_ = e.Logger.fireHooks(e.Level, e)
 
-	if e.logger.Out != nil {
+	if e.Logger.Out != nil {
 		e.write()
 	}
 }
@@ -80,15 +80,15 @@ func (e *Entry) write() {
 	buffer.Reset()
 	e.Buffer = buffer
 
-	format, err := e.logger.Formater.Format(e)
+	format, err := e.Logger.Formatter.Format(e)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to format logger, %v\n", err)
 		return
 	}
 
-	e.logger.mu.Lock()
-	defer e.logger.mu.Unlock()
-	if _, err := e.logger.Out.Write(format); err != nil {
+	e.Logger.mu.Lock()
+	defer e.Logger.mu.Unlock()
+	if _, err := e.Logger.Out.Write(format); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to write to Output, %v\n", err)
 	}
 }
