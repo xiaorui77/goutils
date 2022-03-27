@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -93,14 +94,36 @@ func (e *Entry) write() {
 	}
 }
 
+func (e *Entry) WithFields(fields Fields) *Entry {
+	data := make(Fields, len(e.Fields)+len(fields))
+	for k, v := range e.Fields {
+		data[k] = v
+	}
+	for k, v := range fields {
+		if t := reflect.TypeOf(v); t != nil &&
+			t.Kind() != reflect.Func && t.Kind() != reflect.Ptr && t.Elem().Kind() != reflect.Func {
+			data[k] = v
+		}
+	}
+	return &Entry{
+		Logger: e.Logger,
+		Time:   e.Time,
+		Fields: data,
+	}
+}
+
+func (e *Entry) WithField(k string, v interface{}) *Entry {
+	return e.WithFields(Fields{k: v})
+}
+
 // Print functions
 
 func (e *Entry) Debug(args ...interface{}) {
-	e.Log(1, DebugLevel, fmt.Sprint(fmt.Sprint(args...)))
+	e.Log(2, DebugLevel, fmt.Sprint(fmt.Sprint(args...)))
 }
 
 func (e *Entry) Info(args ...interface{}) {
-	e.Log(1, InfoLevel, fmt.Sprint(args...))
+	e.Log(2, InfoLevel, fmt.Sprint(args...))
 }
 
 func (e *Entry) Warn(args ...interface{}) {
@@ -108,41 +131,41 @@ func (e *Entry) Warn(args ...interface{}) {
 }
 
 func (e *Entry) Error(args ...interface{}) {
-	e.Log(1, ErrorLevel, fmt.Sprint(args...))
+	e.Log(2, ErrorLevel, fmt.Sprint(args...))
 }
 
 func (e *Entry) Fatal(args ...interface{}) {
-	e.Log(1, FatalLevel, fmt.Sprint(args...))
+	e.Log(2, FatalLevel, fmt.Sprint(args...))
 }
 
 func (e *Entry) Panic(args ...interface{}) {
-	e.Log(1, PanicLevel, fmt.Sprint(args...))
+	e.Log(2, PanicLevel, fmt.Sprint(args...))
 }
 
 // Printf family functions
 
 func (e *Entry) Debugf(format string, args ...interface{}) {
-	e.Log(1, DebugLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
+	e.Log(2, DebugLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Infof(format string, args ...interface{}) {
-	e.Log(1, InfoLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
+	e.Log(2, InfoLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Warnf(format string, args ...interface{}) {
-	e.Log(1, WarnLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
+	e.Log(2, WarnLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Errorf(format string, args ...interface{}) {
-	e.Log(1, ErrorLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
+	e.Log(2, ErrorLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Fatalf(format string, args ...interface{}) {
-	e.Log(1, FatalLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
+	e.Log(2, FatalLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 func (e *Entry) Panicf(format string, args ...interface{}) {
-	e.Log(1, PanicLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
+	e.Log(2, PanicLevel, fmt.Sprintf(format, fmt.Sprint(args...)))
 }
 
 // utils functions
