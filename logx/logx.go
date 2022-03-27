@@ -1,8 +1,6 @@
 package logx
 
 import (
-	"github.com/xiaorui77/goutils/logx/formatters"
-	"github.com/xiaorui77/goutils/logx/hooks"
 	"io"
 	"os"
 	"strings"
@@ -37,7 +35,7 @@ func NewLogx(name string, opts ...Option) *LogX {
 		mu:           new(sync.Mutex),
 	}
 
-	logger.Formatter = formatters.NewTextFormatter(logger, true)
+	logger.Formatter = NewTextFormatter(logger, true)
 	logger.entryPool = &sync.Pool{
 		New: func() interface{} {
 			return NewEntry(logger)
@@ -90,12 +88,6 @@ func WithOutput(out io.Writer) Option {
 func WithHook(hook Hook) Option {
 	return func(l *LogX) {
 		l.AddHook(hook)
-	}
-}
-
-func WithEsHook(host string) Option {
-	return func(l *LogX) {
-		l.AddHook(hooks.NewEsHook(host))
 	}
 }
 

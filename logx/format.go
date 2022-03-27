@@ -1,10 +1,9 @@
-package formatters
+package logx
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/xiaorui77/goutils/coloring"
-	"github.com/xiaorui77/goutils/logx"
 	"github.com/xiaorui77/goutils/timeutils"
 	"strings"
 )
@@ -21,18 +20,18 @@ const (
 )
 
 type TextFormatter struct {
-	logger   *logx.LogX
+	logger   *LogX
 	colorful bool
 }
 
-func NewTextFormatter(logger *logx.LogX, colorful bool) *TextFormatter {
+func NewTextFormatter(logger *LogX, colorful bool) *TextFormatter {
 	return &TextFormatter{
 		logger:   logger,
 		colorful: colorful,
 	}
 }
 
-func (f *TextFormatter) Format(entry *logx.Entry) ([]byte, error) {
+func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 	var buffer *bytes.Buffer
 	if entry.Buffer != nil {
 		buffer = entry.Buffer
@@ -62,39 +61,39 @@ func (f *TextFormatter) Format(entry *logx.Entry) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func levelColor(level logx.Level) int {
+func levelColor(level Level) int {
 	switch level {
-	case logx.InfoLevel:
+	case InfoLevel:
 		return green
-	case logx.WarnLevel:
+	case WarnLevel:
 		return yellow
-	case logx.ErrorLevel, logx.FatalLevel, logx.PanicLevel:
+	case ErrorLevel, FatalLevel, PanicLevel:
 		return red
-	case logx.DebugLevel:
+	case DebugLevel:
 		return gray
 	}
 	return green
 }
 
-func levelString(level logx.Level) string {
+func levelString(level Level) string {
 	switch level {
-	case logx.DebugLevel:
+	case DebugLevel:
 		return "DEBGU"
-	case logx.InfoLevel:
+	case InfoLevel:
 		return " INFO"
-	case logx.WarnLevel:
+	case WarnLevel:
 		return " WARN"
-	case logx.ErrorLevel:
+	case ErrorLevel:
 		return "ERROR"
-	case logx.FatalLevel:
+	case FatalLevel:
 		return "FATAL"
-	case logx.PanicLevel:
+	case PanicLevel:
 		return "PANIC"
 	}
 	return "UNKNOWN"
 }
 
-func buildCaller(entry *logx.Entry) string {
+func buildCaller(entry *Entry) string {
 	file := entry.Caller.File
 	line := entry.Caller.Line
 
