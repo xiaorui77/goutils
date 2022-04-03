@@ -62,11 +62,13 @@ type LogDoc struct {
 }
 
 func (hook *esHook) run() {
-	select {
-	case <-hook.ctx.Done():
-		return
-	case l := <-hook.buff:
-		hook.send(l)
+	for {
+		select {
+		case <-hook.ctx.Done():
+			return
+		case l := <-hook.buff:
+			hook.send(l)
+		}
 	}
 }
 
