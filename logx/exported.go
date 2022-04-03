@@ -11,7 +11,7 @@ func SetName(name string) {
 }
 
 func SetInstance(instance string) {
-	std.instance = instance
+	std.Instance = instance
 }
 
 func SetLevel(level Level) {

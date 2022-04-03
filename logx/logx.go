@@ -12,7 +12,7 @@ var once sync.Once
 
 type LogX struct {
 	Name     string
-	instance string
+	Instance string
 
 	level        Level
 	ReportCaller bool
@@ -28,7 +28,7 @@ type LogX struct {
 func NewLogx(name string, opts ...Option) *LogX {
 	logger := &LogX{
 		Name:         name,
-		instance:     name + "-0",
+		Instance:     name + "-0",
 		level:        InfoLevel,
 		ReportCaller: false,
 		Out:          os.Stdout,
@@ -64,7 +64,7 @@ type Option func(l *LogX)
 
 func WithInstance(name string) Option {
 	return func(l *LogX) {
-		l.instance = name
+		l.Instance = name
 	}
 }
 

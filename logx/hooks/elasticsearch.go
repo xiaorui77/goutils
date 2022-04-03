@@ -44,9 +44,11 @@ func NewEsHook(host string) *esHook {
 
 func (hook *esHook) Fire(entry *logx.Entry) error {
 	hook.buff <- &LogDoc{
-		Level:   entry.Level.String(),
-		Time:    entry.Time.Format(timeutils.RFC3339Milli),
-		Message: entry.Message,
+		App:      entry.Logger.Name,
+		Instance: entry.Logger.Instance,
+		Level:    entry.Level.String(),
+		Message:  entry.Message,
+		Time:     entry.Time.Format(timeutils.RFC3339Milli),
 	}
 	return nil
 }
@@ -56,9 +58,12 @@ func (hook *esHook) Levels() []logx.Level {
 }
 
 type LogDoc struct {
-	Level   string `json:"level"`
-	Message string `json:"message"`
-	Time    string `json:"time"`
+	App      string `json:"app"`
+	Instance string `json:"instance"`
+	Level    string `json:"level"`
+	Message  string `json:"message"`
+	Fields   string `json:"fields"`
+	Time     string `json:"time"`
 }
 
 func (hook *esHook) run() {
