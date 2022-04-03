@@ -1,6 +1,7 @@
 package logx
 
 type Hook interface {
+	SetLogger(logger *LogX)
 	Fire(entry *Entry) error
 	Levels() []Level
 }
@@ -8,6 +9,8 @@ type Hook interface {
 func (l *LogX) AddHook(hook Hook) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	hook.SetLogger(l)
 
 	for _, level := range hook.Levels() {
 		if l.hooks[level] == nil {

@@ -16,6 +16,7 @@ var hookLevels = []logx.Level{
 }
 
 type esHook struct {
+	logger *logx.LogX
 	client *elastic.Client
 	ctx    context.Context
 
@@ -44,11 +45,12 @@ func NewEsHook(host string) *esHook {
 
 func (hook *esHook) Fire(entry *logx.Entry) error {
 	hook.buff <- &LogDoc{
-		App:      entry.Logger.Name,
-		Instance: entry.Logger.Instance,
-		Level:    entry.Level.String(),
-		Message:  entry.Message,
-		Time:     entry.Time.Format(timeutils.RFC3339Milli),
+		App:       entry.Logger.Name,
+		Instance:  entry.Logger.Instance,
+		Level:     entry.Level.String(),
+		Message:   entry.Message,
+		Fields:    entry.Fields,
+		Timestamp: entry.Time.Format(timeutils.RFC3339Milli),
 	}
 	return nil
 }
@@ -57,13 +59,17 @@ func (hook *esHook) Levels() []logx.Level {
 	return hookLevels
 }
 
+func (hook *esHook) SetLogger(logger *logx.LogX) {
+	hook.logger = logger
+}
+
 type LogDoc struct {
-	App      string `json:"app"`
-	Instance string `json:"instance"`
-	Level    string `json:"level"`
-	Message  string `json:"message"`
-	Fields   string `json:"fields"`
-	Time     string `json:"time"`
+	App       string                 `json:"app"`
+	Instance  string                 `json:"instance"`
+	Level     string                 `json:"level"`
+	Message   string                 `json:"message"`
+	Fields    map[string]interface{} `json:"fields"`
+	Timestamp string                 `json:"timestamp"`
 }
 
 func (hook *esHook) run() {
@@ -78,7 +84,7 @@ func (hook *esHook) run() {
 }
 
 func (hook *esHook) send(l *LogDoc) {
-	if _, err := hook.client.Index().Index("logx_" + l.Level).BodyJson(l).Do(hook.ctx); err != nil {
+	if _, err := hook.client.Index().Index("logx_" + hook.logger.Name).BodyJson(l).Do(hook.ctx); err != nil {
 		hook.errCount++
 	}
 	hook.totalCount++
