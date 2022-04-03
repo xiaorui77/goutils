@@ -10,6 +10,9 @@ func (l *LogX) AddHook(hook Hook) {
 	defer l.mu.Unlock()
 
 	for _, level := range hook.Levels() {
+		if l.hooks[level] == nil {
+			l.hooks[level] = []Hook{}
+		}
 		l.hooks[level] = append(l.hooks[level], hook)
 	}
 }
