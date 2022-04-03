@@ -33,6 +33,7 @@ func NewLogx(name string, opts ...Option) *LogX {
 		ReportCaller: false,
 		Out:          os.Stdout,
 		mu:           new(sync.Mutex),
+		hooks:        make(map[Level][]Hook),
 	}
 
 	logger.Formatter = NewTextFormatter(logger, true)
