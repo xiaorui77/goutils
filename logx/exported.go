@@ -34,6 +34,14 @@ func AddHook(hook Hook) {
 	std.AddHook(hook)
 }
 
+func WithFields(fields Fields) *Entry {
+	return std.WithFields(fields)
+}
+
+func WithField(key string, value interface{}) *Entry {
+	return std.WithField(key, value)
+}
+
 // Global Print family functions
 
 // Log 可以打印指定级别的日志,
