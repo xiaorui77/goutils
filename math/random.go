@@ -9,23 +9,23 @@ import (
 var seed = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // Random16Str 返回指定长度的随机16进制数字字符串
-func Random16Str(len int) string {
-	return RandomStr(len, 16)
+func Random16Str(length int) string {
+	return RandomStr(length, 16)
 }
 
 // Random62Str 返回指定长度的随机62进制数字字符串
-func Random62Str(len int) string {
-	return RandomStr(len, 62)
+func Random62Str(length int) string {
+	return RandomStr(length, 62)
 }
 
 // RandomStr 返回指定长度和进制的随机数字字符串
-func RandomStr(len, base int) string {
-	if len <= 0 || base <= 0 || base > 76 {
+func RandomStr(length, base int) string {
+	if length <= 0 || base <= 0 || base > len(BaseNumber) {
 		return ""
 	}
-	str := make([]byte, len)
-	for i := 0; i < len; i++ {
-		str[i] = baseNumber[seed.Intn(base)]
+	str := make([]byte, length)
+	for i := 0; i < length; i++ {
+		str[i] = BaseNumber[seed.Intn(base)]
 	}
 	return string(str)
 }

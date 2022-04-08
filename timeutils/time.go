@@ -21,6 +21,11 @@ const (
 	StampNano    = "15:04:05.000000000"
 )
 
+var (
+	// CSTZone 中国标准时间
+	CSTZone = time.FixedZone("CST", 8*3600)
+)
+
 // Min returns the min duration between x and y.
 func Min(x, y time.Duration) time.Duration {
 	if x < math.MinInt64 || y < math.MinInt64 {
