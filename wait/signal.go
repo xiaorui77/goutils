@@ -8,7 +8,7 @@ import (
 	"syscall"
 )
 
-var shutdownSignals = []os.Signal{os.Interrupt, syscall.SIGTERM}
+var ShutdownSignals = []os.Signal{os.Interrupt, syscall.SIGTERM}
 var handler = make(chan struct{})
 
 // SetupStopSignal registered for SIGTERM and SIGINT
@@ -19,7 +19,7 @@ func SetupStopSignal() (<-chan struct{}, context.Context) {
 	stopCtx, cancel := context.WithCancel(context.Background())
 
 	signCh := make(chan os.Signal, 2)
-	signal.Notify(signCh, shutdownSignals...)
+	signal.Notify(signCh, ShutdownSignals...)
 	go func() {
 		s1 := <-signCh
 		log.Printf("Received signal [%v], beginning shutdown process...\n", s1)

@@ -7,7 +7,7 @@ import (
 
 var (
 	// Windows file name: not `?“”/\\<>*|` and len less then 255
-	windowsFileReg = regexp.MustCompile(`[\s?“”/\\<>*|]+`)
+	windowsFileReg = regexp.MustCompile(`[\s/\\:*?"<>|]+`)
 )
 
 func WindowsName(str string) string {
