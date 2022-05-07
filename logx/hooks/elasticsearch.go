@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/olivere/elastic/v7"
 	"github.com/xiaorui77/goutils/logx"
-	"github.com/xiaorui77/goutils/timeutils"
+	"github.com/xiaorui77/goutils/time"
 )
 
 var hookLevels = []logx.Level{
@@ -50,7 +50,7 @@ func (hook *esHook) Fire(entry *logx.Entry) error {
 		Level:     entry.Level.String(),
 		Message:   entry.Message,
 		Fields:    entry.Fields,
-		Timestamp: entry.Time.Format(timeutils.RFC3339Milli),
+		Timestamp: entry.Time.Format(time.RFC3339Milli),
 	}
 	return nil
 }

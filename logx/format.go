@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/xiaorui77/goutils/coloring"
-	"github.com/xiaorui77/goutils/timeutils"
+	"github.com/xiaorui77/goutils/time"
 	"strings"
 )
 
@@ -39,7 +39,7 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 		buffer = &bytes.Buffer{}
 	}
 
-	timestamp := entry.Time.Format(timeutils.DefaultTimeFormat)
+	timestamp := entry.Time.Format(time.Format)
 	buffer.WriteString(timestamp)
 
 	level := coloring.Coloring(levelString(entry.Level), levelColor(entry.Level), f.colorful)
