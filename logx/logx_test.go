@@ -6,7 +6,7 @@ import (
 )
 
 func TestPrintf(t *testing.T) {
-	Init("test", WithInstance("test"), WithReportCaller(true), WithLevel(DebugLevel), WithLevelS("debug"))
+	Init("test", WithInstance("test"), WithReportCaller(true), WithLevel(DebugLevel))
 
 	Debugf("hello world: %s", "debug")
 	Infof("hello world: %s", "info")

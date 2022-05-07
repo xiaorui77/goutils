@@ -21,16 +21,15 @@ func SetupStopSignal() (<-chan struct{}, context.Context) {
 	signCh := make(chan os.Signal, 2)
 	signal.Notify(signCh, shutdownSignals...)
 	go func() {
-		s := <-signCh
-		log.Printf("Received signal %v, beginning shutdown process...\n", s)
+		s1 := <-signCh
+		log.Printf("Received signal [%v], beginning shutdown process...\n", s1)
 		cancel()
 		close(stopCh)
 
 		// Exit directly when received second signal
-		<-signCh
-		log.Println("Received signal again, will be force to exit")
+		s2 := <-signCh
+		log.Printf("Received signal [%v] again, will be force to exit", s2)
 		os.Exit(1)
-
 	}()
 	return stopCh, stopCtx
 }

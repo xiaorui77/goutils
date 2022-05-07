@@ -35,6 +35,7 @@ type Entry struct {
 func NewEntry(l *LogX) *Entry {
 	return &Entry{
 		Logger: l,
+		Time:   time.Now(),
 		Fields: make(Fields, 4),
 	}
 }
@@ -107,7 +108,6 @@ func (e *Entry) WithFields(fields Fields) *Entry {
 	}
 	return &Entry{
 		Logger: e.Logger,
-		Time:   e.Time,
 		Fields: data,
 	}
 }
